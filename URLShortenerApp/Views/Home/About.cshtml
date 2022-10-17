@@ -1,0 +1,28 @@
+﻿@{
+    ViewData["Title"] = "ASP.NET Core MVC URL Shortener";
+    ViewBag.Title = "About";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<h3>Algorithm</h3>
+
+<p>Basicaly, we store the URL in database, so it has a numeric ID, an we convert it to a another base in order to have a "stringified" version of the ID.</p>
+
+<p>
+    When we have the short URL the process is:
+    <ul>
+        <li>convert the "stringified" ID to the numeric ID.</li>
+        <li>load the data from DB.</li>
+        <li>redirect to the original URL using an HTTP redirection.</li>
+    </ul>
+</p>
+
+<h3>Implementation</h3>
+
+<p>For the stringification, I've chosen base 62 with this alphabet : "23456789bcdfghjkmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ-_".</p>
+
+<p>I've used the ShortURL class by delight.im to do this work. See <a href="https://github.com/delight-im/ShortURL">this link</a> for more information about it.</p>
+
+<p>You can also see this link: <a href="https://gist.github.com/dgritsko/9554733">https://gist.github.com/dgritsko/9554733</a>.</p>

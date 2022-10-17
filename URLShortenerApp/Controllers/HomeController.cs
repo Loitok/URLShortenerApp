@@ -1,37 +1,99 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using System.Threading.Tasks;
 using URLShortenerApp.Models;
+using URLShortenerApp.Services.Abstraction;
 
 namespace URLShortenerApp.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
+        private readonly IHomeService _service;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(IHomeService service)
         {
-            _logger = logger;
+            _service = service;
         }
 
-        public IActionResult Index()
+        public ActionResult Index()
+        {
+            if (HttpContext.Session.GetString("idUser") != null)
+            {
+                return RedirectToAction(controllerName: "ShortUrls", actionName: "Index");
+            }
+            else
+            {
+                return RedirectToAction("Login");
+            }
+        }
+
+        public ActionResult Register()
         {
             return View();
         }
 
-        public IActionResult Privacy()
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> Register(UserMasterModel user)
+        {
+            if (ModelState.IsValid)
+            {
+                var check = await _service.FindByEmail(user.Email);
+
+                if (check.Success && check.Data == null)
+                {
+                    var register = await _service.Register(user);
+                    if (!register.Success)
+                        ViewBag.error = register.ErrorMessage.Message;
+
+                    return RedirectToAction(controllerName: "ShortUrls", actionName: "Index");
+                }
+                else
+                {
+                    ViewBag.error = "Email already exists";
+                    return View();
+                }
+            }
+            return View();
+        }
+
+        public ActionResult Login()
         {
             return View();
         }
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> Login(string email, string password)
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            if (ModelState.IsValid)
+            {
+                var data = await _service.FindByPassword(email, password);
+
+                if (data.Success && data.Data.Any())
+                {
+                    HttpContext.Session.SetString("Name", data.Data.First().Name);
+                    HttpContext.Session.SetString("Email", data.Data.First().Email);
+                    HttpContext.Session.SetInt32("idUser", data.Data.First().Id);
+                    return RedirectToAction("Index");
+                }
+                else
+                {
+                    ViewBag.error = "Login failed";
+                    return RedirectToAction("Register");
+                }
+            }
+            return View();
         }
+
+        public ActionResult Logout()
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login");
+        }
+
     }
 }
